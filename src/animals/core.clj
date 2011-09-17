@@ -1,7 +1,7 @@
 (ns animals.core
   (:use [midje.sweet]))
 
-(unfinished species-exclusions booked-animals-in-period procedures )
+(unfinished timeslice-intersects? bookings animals species-exclusions procedures )
 
 (defn build-map [value-generator keys]
   (reduce (fn [so-far procedure]
@@ -9,9 +9,28 @@
           {}
           keys))
 
+(defn booked-animals-in-period [timeslice]
+   (map :animal (filter #(timeslice-intersects? timeslice) (bookings))))
+
+;.;. FAIL at (NO_SOURCE_FILE:1)
+;.;. You claimed the following was needed, but it was never used:
+;.;.     (timeslice-intersects? ...timeslice... ...cowbooking...)
+;.;. 
+;.;. FAIL at (NO_SOURCE_FILE:1)
+;.;.     Expected: [...thecow...]
+;.;.       Actual: nil
+(fact "returns booked animals given a timeslice"
+  (booked-animals-in-period ...timeslice...) => [...thecow...]
+  (provided
+    (animals) => [...thecow... ...thechicken... ...thehorse...]
+    (bookings) => [...cowbooking...]
+    (timeslice-intersects? ...timeslice... ...cowbooking...) => true
+    ...cowbooking... =contains=> { :animal ...thecow... }))
+
 (defn excluded-by-species []
-  (build-map (fn [procedure] (species-exclusions procedure))
-             (procedures)))
+  (build-map
+   (fn [procedure] (species-exclusions procedure))
+   (procedures)))
 
 (fact "excludes animals from procedures that are not relevant for their species"
   (excluded-by-species) => {...procedure... [...thecow...]
@@ -22,8 +41,9 @@
     (procedures) => [...procedure... ...otherprocedure... ]))
 
 (defn excluded-by-timeslice [timeslice]
-  (build-map (fn [_] (booked-animals-in-period timeslice))
-             (procedures)))
+  (build-map
+   (fn [_] (booked-animals-in-period timeslice))
+   (procedures)))
 
 (fact "excludes animals that are already booked in the timeslice"
   (excluded-by-timeslice ...timeslice...) => {...procedure... [...thehorse... ...thecow...]}
@@ -36,8 +56,6 @@
               (excluded-by-timeslice timeslice)
               (excluded-by-species)))
 
-;.;. A journey of a thousand miles begins with a single step. --
-;.;. @alanmstokes
 (fact "exclusions contain animals that are excluded by species or excluded by reservations"
   (exclusions ...timeslice...) => {...procedure... #{ ...daisycow... ...jackhorse...}}
   (provided
@@ -45,3 +63,4 @@
     (excluded-by-species) => {...procedure... [...daisycow...]}))
 
 
+(fact "at the very least, procedures yields a vector of procedure names")
